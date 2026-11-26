@@ -1,0 +1,107 @@
+diff --git a/Sources/Plugins.swift b/Sources/Plugins.swift
+index 884a871..69d68d4 100644
+--- a/Sources/Plugins.swift
++++ b/Sources/Plugins.swift
+@@ -181,6 +181,12 @@ final class PluginWindowController: NSWindowController, NSWindowDelegate, WKNavi
+     guard package.manifest.id == "org.blink.apps", let root = Bundle.main.resourceURL?.appendingPathComponent("Plugins/org.blink.apps") else { return false }
+     return package.root == root.resolvingSymlinksInPath().standardizedFileURL
+   }
++  @MainActor private lazy var database = DatabaseWorkbench()
++  private var databaseAllowed: Bool {
++    guard package.manifest.id == "org.blink.database",
++          let root = Bundle.main.resourceURL?.appendingPathComponent("Plugins/org.blink.database") else { return false }
++    return package.root == root.resolvingSymlinksInPath().standardizedFileURL
++  }
+   private let webView: WKWebView
+   private let content: WKUserContentController
+   private var spotifyAllowed: Bool {
+@@ -221,6 +227,7 @@ final class PluginWindowController: NSWindowController, NSWindowDelegate, WKNavi
+     content.removeScriptMessageHandler(forName: "blink", contentWorld: .page)
+     webView.stopLoading()
+     if spotifyAllowed { SpotifyService.shared.cancelLogin() }
++    if databaseAllowed { database.cancel() }
+     onClose?()
+   }
+ 
+@@ -260,6 +267,14 @@ final class PluginWindowController: NSWindowController, NSWindowDelegate, WKNavi
+       }
+       return
+     }
++    if method.hasPrefix("database.") {
++      guard databaseAllowed else { replyHandler(nil, "Database access requires the bundled workbench"); return }
++      Task { @MainActor in
++        do { replyHandler(try await database.call(method, request), nil) }
++        catch { replyHandler(nil, error.localizedDescription) }
++      }
++      return
++    }
+     if method.hasPrefix("spotify.") {
+       guard spotifyAllowed else { replyHandler(nil, "Spotify requires the bundled Spotify plugin"); return }
+       Task { @MainActor in
+@@ -270,7 +285,7 @@ final class PluginWindowController: NSWindowController, NSWindowDelegate, WKNavi
+     }
+     if method == "host.info" {
+       replyHandler(["apiVersion": 1, "host": "wink", "platform": "macos", "pluginID": package.manifest.id,
+-                    "capabilities": ["host.info"] + (spotifyAllowed ? ["spotify"] : []) + (package.manifest.permissions.contains("storage") ? ["storage.get", "storage.set"] : [])], nil)
++                    "capabilities": ["host.info"] + (databaseAllowed ? ["database"] : []) + (spotifyAllowed ? ["spotify"] : []) + (package.manifest.permissions.contains("storage") ? ["storage.get", "storage.set"] : [])], nil)
+       return
+     }
+     guard package.manifest.permissions.contains("storage"),
+@@ -300,6 +315,8 @@ final class PluginWindowController: NSWindowController, NSWindowDelegate, WKNavi
+       host: Object.freeze({info: () => call('host.info')}),
+       apps: Object.freeze({list: () => call('apps.list'), open: id => call('apps.open', {id}),
+         check: id => call('apps.check', {id}), update: id => call('apps.update', {id}), install: () => call('apps.install')}),
++      database: Object.freeze({connect: () => call('database.connect'), query: sql => call('database.query', {sql}),
++        cancel: () => call('database.cancel')}),
+       spotify: Object.freeze({status: () => call('spotify.status'), login: clientID => call('spotify.login', {clientID}),
+         logout: () => call('spotify.logout'), streamingToken: () => call('spotify.streamingToken'), request: (verb, path, query = {}, body) => call('spotify.request', {verb, path, query, ...(body === undefined ? {} : {body})}),
+         artwork: url => call('spotify.artwork', {url})}),
+diff --git a/docs/plugins.md b/docs/plugins.md
+index 66fb00d..94253c7 100644
+--- a/docs/plugins.md
++++ b/docs/plugins.md
+@@ -230,3 +230,17 @@ Apps → Manage Apps opens bundled `org.blink.apps`. Its keyboard-driven web UI
+ `list` returns id, name, version, source, updatable, updateVersion and permissions. `check` contacts GitHub on user action and stages a commit-pinned candidate. `update` requires source/version/permission review and retains a previous-package backup. The old tab closes; stored data remains. Bundled plugins update with Wink. New receipts preserve refs; legacy receipts follow the default branch. Commit-pinned installs stay pinned. No background auto-installation or iOS implementation.
+ 
+ The Apps list also includes `repositoryURL`: the canonical GitHub repository for installed apps, the Spotify source repository for the bundled player, and the source folder in Wink for Plugin Playground. The portable UI renders an accessible **Open GitHub** link. Wink opens user-clicked, validated GitHub repository/tree links in the default browser rather than navigating the Apps tab. No link is shown for apps without known source metadata.
++
++## Database Workbench (Wink prototype)
++
++Open **Apps → Database Workbench → Choose connection…**. Use a local MySQL
++server or an existing SSH forward bound to `127.0.0.1`. The prototype needs
++PHP CLI with `pdo_mysql` (Homebrew or Herd) and a MySQL account granted
++`SELECT` only. Choose a table to preview rows, or run SQL with **⌘Enter**.
++The helper opens a fresh read-only transaction for each query and caps results
++at 200 rows. **Stop waiting** terminates the local helper; it is not a
++server-side kill command.
++
++Credentials stay in Wink’s native dialog and in memory for the life of the
++tab. Only this bundled app has the database bridge. Blink, saved credentials,
++and automatic SSH forwarding are not implemented in this prototype.
+diff --git a/tools/check-plugins.sh b/tools/check-plugins.sh
+index b017aba..962f0cf 100755
+--- a/tools/check-plugins.sh
++++ b/tools/check-plugins.sh
+@@ -8,18 +8,18 @@ swiftc -D WINK_TESTING Sources/PluginPackage.swift Tests/PluginPackageChecks.swi
+ "$CHECK_DIR/packages"
+ swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Tests/PluginInstallerChecks.swift -o "$CHECK_DIR/installer"
+ "$CHECK_DIR/installer"
+-swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Tests/PluginWebViewChecks/main.swift -o "$CHECK_DIR/webview"
++swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Sources/DatabaseWorkbench.swift Tests/PluginWebViewChecks/main.swift -o "$CHECK_DIR/webview"
+ "$CHECK_DIR/webview" "$PWD/Resources/Plugins/org.blink.demo"
+ swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/SpotifyService.swift Tests/SpotifyChecks.swift -o "$CHECK_DIR/spotify"
+ "$CHECK_DIR/spotify"
+ mkdir -p "$CHECK_DIR/SpotifyChecks.app/Contents/MacOS" "$CHECK_DIR/SpotifyChecks.app/Contents/Resources"
+ cp -R Resources/Plugins "$CHECK_DIR/SpotifyChecks.app/Contents/Resources/"
+-swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Tests/SpotifyWebViewChecks/main.swift -o "$CHECK_DIR/SpotifyChecks.app/Contents/MacOS/SpotifyChecks"
++swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Sources/DatabaseWorkbench.swift Tests/SpotifyWebViewChecks/main.swift -o "$CHECK_DIR/SpotifyChecks.app/Contents/MacOS/SpotifyChecks"
+ "$CHECK_DIR/SpotifyChecks.app/Contents/MacOS/SpotifyChecks"
+ echo "Check binaries retained at $CHECK_DIR"
+ 
+-swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Tests/AppsWebViewChecks/main.swift -o "$CHECK_DIR/SpotifyChecks.app/Contents/MacOS/SpotifyChecks"
++swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Sources/DatabaseWorkbench.swift Tests/AppsWebViewChecks/main.swift -o "$CHECK_DIR/SpotifyChecks.app/Contents/MacOS/SpotifyChecks"
+ "$CHECK_DIR/SpotifyChecks.app/Contents/MacOS/SpotifyChecks"
+ 
+-swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Tests/TUIWebViewChecks/main.swift -o "$CHECK_DIR/tui"
++swiftc -D WINK_TESTING Sources/PluginPackage.swift Sources/PluginInstaller.swift Sources/Plugins.swift Sources/SpotifyService.swift Sources/DatabaseWorkbench.swift Tests/TUIWebViewChecks/main.swift -o "$CHECK_DIR/tui"
+ "$CHECK_DIR/tui" "$PWD/examples/hterm-tui"

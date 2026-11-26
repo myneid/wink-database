@@ -1,0 +1,24 @@
+:root { color-scheme: dark; font: 15px system-ui; color: #e3eae3; background: #181e1c; }
+body { margin: 0; }
+header, .actions { display: flex; align-items: center; gap: 12px; }
+header { padding: 14px 20px; justify-content: space-between; border-bottom: 1px solid #41504a; }
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 15px; margin-top: 0; }
+main { display: grid; grid-template-columns: minmax(140px, 23%) minmax(0, 1fr); }
+aside, section { padding: 16px; min-width: 0; }
+aside { border-right: 1px solid #41504a; }
+ul { list-style: none; padding: 0; }
+li button { width: 100%; overflow-wrap: anywhere; text-align: left; margin-bottom: 4px; }
+button, textarea { font: inherit; border: 1px solid #557269; border-radius: 5px; background: #263832; color: inherit; }
+button { padding: 7px 12px; }
+button:disabled { opacity: .5; }
+textarea { box-sizing: border-box; width: 100%; min-height: 110px; margin: 8px 0; padding: 8px; font-family: monospace; }
+.results { overflow: auto; max-height: 55vh; }
+table { border-collapse: collapse; font-family: monospace; }
+th, td { text-align: left; border: 1px solid #41504a; padding: 6px 10px; min-width: 75px; max-width: 460px; overflow-wrap: anywhere; }
+th { position: sticky; top: 0; background: #263832; }
+@media (max-width: 550px) {
+  main { display: block; }
+  aside { border-right: 0; border-bottom: 1px solid #41504a; }
+  ul { max-height: 120px; overflow: auto; }
+}

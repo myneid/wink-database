@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database Workbench</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<header><h1>Database Workbench</h1><button id="connect">Choose connection…</button></header>
+<main>
+  <aside><h2>Tables</h2><ul id="tables"></ul></aside>
+  <section>
+    <label for="sql">SQL editor</label>
+    <textarea id="sql" spellcheck="false">SELECT DATABASE();</textarea>
+    <div class="actions"><button id="run" disabled>Run query</button><button id="cancel" disabled>Stop waiting</button></div>
+    <p role="status" id="status">Choose a read-only MySQL connection.</p>
+    <div class="results" tabindex="0" aria-label="Query results"><table id="results"></table></div>
+  </section>
+</main>
+</body>
+</html>
