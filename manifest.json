@@ -2,9 +2,10 @@
   "manifestVersion": 1,
   "id": "org.blink.database",
   "name": "Database Workbench",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "entry": "index.html",
   "permissions": [
-    "database"
+    "database",
+    "storage"
   ]
 }

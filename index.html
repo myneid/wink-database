@@ -5,19 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Database Workbench</title>
 <link rel="stylesheet" href="style.css">
+<script src="sql.js" defer></script>
+<script src="grid.js" defer></script>
+<script src="editor.js" defer></script>
 <script src="app.js" defer></script>
 </head>
 <body>
-<header><h1>Database Workbench</h1><button id="connect" disabled>Choose connection…</button></header>
-<main>
-  <aside><h2>Tables</h2><ul id="tables"></ul></aside>
-  <section>
-    <label for="sql">SQL editor</label>
-    <textarea id="sql" spellcheck="false">SELECT DATABASE();</textarea>
-    <div class="actions"><button id="run" disabled>Run query</button><button id="cancel" disabled>Stop waiting</button></div>
-    <p role="status" id="status">Choose a read-only MySQL connection.</p>
-    <div class="results" tabindex="0" aria-label="Query results"><table id="results"></table></div>
-  </section>
-</main>
+<section id="home" class="home" aria-labelledby="home-title">
+  <div class="home-inner">
+    <header class="home-head">
+      <div>
+        <h1 id="home-title">Database Workbench</h1>
+        <p class="muted">MySQL and MariaDB — direct or through your Wink and Blink SSH hosts.</p>
+      </div>
+      <div class="home-actions">
+        <button id="import-url" class="button" disabled>Import from URL…</button>
+        <button id="new-connection" class="button primary" disabled>New Connection</button>
+      </div>
+    </header>
+    <input id="connection-search" class="search" type="search" placeholder="Search connections" aria-label="Search connections" autocomplete="off">
+    <ul id="connection-list" class="connection-list" role="listbox" aria-label="Saved connections"></ul>
+    <p id="home-status" class="home-status" role="status"></p>
+  </div>
+</section>
+
+<section id="workspace" class="workspace" hidden>
+  <header class="toolbar">
+    <button id="back" class="icon-button" title="All connections" aria-label="All connections">‹</button>
+    <span id="env-dot" class="env-dot" aria-hidden="true"></span>
+    <strong id="conn-title" class="conn-title"></strong>
+    <span id="conn-meta" class="muted conn-meta"></span>
+    <label class="db-picker">
+      <span class="sr-only">Database</span>
+      <select id="database-select" aria-label="Database"></select>
+    </label>
+    <span class="spacer"></span>
+    <span id="busy" class="busy" hidden><span class="spinner" aria-hidden="true"></span><span id="busy-text">Working…</span>
+      <button id="stop" class="link-button" title="Stop query (⌘.)">Stop</button></span>
+    <span id="badge-ro" class="badge" hidden title="Writes are blocked for this connection">READ-ONLY</span>
+    <button id="quick-open" class="button small" title="Open table (⌘P)">Open… <kbd>⌘P</kbd></button>
+    <button id="new-query" class="button small" title="New SQL query (⌥⌘N)">＋ SQL</button>
+    <button id="refresh" class="icon-button" title="Refresh (⌘R)" aria-label="Refresh">⟳</button>
+  </header>
+  <div class="workspace-body">
+    <aside id="sidebar" class="sidebar" aria-label="Database objects">
+      <input id="object-filter" class="search small" type="search" placeholder="Filter tables" aria-label="Filter tables" autocomplete="off">
+      <nav id="objects" class="objects"></nav>
+      <div class="sidebar-foot">
+        <button id="new-table" class="link-button">＋ New table</button>
+        <span id="object-count" class="muted"></span>
+      </div>
+    </aside>
+    <div id="sidebar-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize sidebar"></div>
+    <main class="main">
+      <nav id="tabs" class="tabs" role="tablist" aria-label="Open tabs"></nav>
+      <div id="panes" class="panes"></div>
+    </main>
+  </div>
+  <footer class="statusbar">
+    <span id="status" role="status" aria-live="polite"></span>
+    <span class="spacer"></span>
+    <span id="server" class="muted"></span>
+  </footer>
+</section>
+
+<div id="layer" class="layer"></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>
