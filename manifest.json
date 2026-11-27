@@ -1,0 +1,10 @@
+{
+  "manifestVersion": 1,
+  "id": "org.blink.database",
+  "name": "Database Workbench",
+  "version": "0.2.0",
+  "entry": "index.html",
+  "permissions": [
+    "database"
+  ]
+}

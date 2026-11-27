@@ -1,27 +1,18 @@
 # Wink Database Workbench
 
-A macOS prototype for browsing MySQL tables, previewing rows, and running SQL
-from Wink. Connect to a local MySQL instance or an existing SSH forward on
-127.0.0.1. Use an account granted SELECT only.
+Browse MySQL tables, preview rows, and run read-only SQL in Wink.
 
-## Build with Wink
+## Install
 
-This is source for a bundled app, not a package that works via Wink’s
-GitHub-link installer. Stock Wink lacks the database bridge. Use a clean
-[Wink 0.9.2 checkout](https://github.com/myneid/wink/tree/v0.9.2). From this
-repository, with `WINK_CHECKOUT` pointing at that checkout, run:
+In a Wink build with the database bridge, choose **Apps → Install Database
+Workbench…**, or paste this repository's root URL into **Install from GitHub…**.
+Review the requested database permission and confirm the install. Stock
+Wink 0.9.2 does not include the bridge.
 
-```sh
-git -C "$WINK_CHECKOUT" apply --check "$PWD/wink-host.patch"
-git -C "$WINK_CHECKOUT" apply "$PWD/wink-host.patch"
-cp Sources/DatabaseWorkbench.swift "$WINK_CHECKOUT/Sources/"
-cp Resources/database-query.php "$WINK_CHECKOUT/Resources/"
-cp -R Resources/Plugins/org.blink.database "$WINK_CHECKOUT/Resources/Plugins/"
-(cd "$WINK_CHECKOUT" && bash build.sh)
-```
+Open **Apps → Database Workbench → Choose connection…** and select a local
+MySQL server or an existing SSH forward on 127.0.0.1. Use a MySQL account
+granted SELECT only. Wink needs PHP CLI with pdo_mysql (Homebrew or Herd).
+Credentials stay in Wink; the app receives query results, capped at 200 rows.
 
-Open the resulting `build/Wink.app` and choose **Apps → Database Workbench**.
-The helper needs PHP CLI with `pdo_mysql` (Homebrew or Herd). Credentials are
-entered in a native dialog and kept in memory for the tab’s lifetime. Results
-are capped at 200 rows. The prototype does not save passwords, create SSH
-tunnels, or run in Blink on iOS.
+The files under Sources and Resources, and wink-host.patch, document the
+original bundled 0.1.0 prototype. They are not run by the plugin installer.
