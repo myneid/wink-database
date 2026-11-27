@@ -85,9 +85,20 @@ sql.addEventListener('keydown', event => {
   }
 });
 
-blink.host.info().then(({ capabilities }) => {
-  if (!capabilities.includes('database')) {
-    connect.disabled = true;
-    status.textContent = 'This host does not provide a database connection.';
+async function detectDatabase() {
+  const unavailable = 'This app is installed, but this host does not support MySQL connections yet. Use Wink 0.9.3 or newer.';
+  try {
+    const host = window.blink;
+    const info = await host?.host?.info?.();
+    if (info?.capabilities?.includes('database') &&
+        ['connect', 'query', 'cancel'].every(method => typeof host.database?.[method] === 'function')) {
+      connect.disabled = false;
+      return;
+    }
+  } catch {
+    // An older host may not expose feature detection.
   }
-});
+  status.textContent = unavailable;
+}
+
+detectDatabase();

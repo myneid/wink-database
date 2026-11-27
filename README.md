@@ -1,13 +1,17 @@
 # Wink Database Workbench
 
-Browse MySQL tables, preview rows, and run read-only SQL in Wink.
+An opt-in Apps package for browsing MySQL tables, previewing rows, and running read-only SQL.
 
 ## Install
 
-In a Wink build with the database bridge, choose **Apps → Install Database
-Workbench…**, or paste this repository's root URL into **Install from GitHub…**.
-Review the requested database permission and confirm the install. Stock
-Wink 0.9.2 does not include the bridge.
+Paste this repository's root URL into **Apps → Install from GitHub…**. The
+root contains the v1 manifest and web assets; no bundling or native helper
+installation is part of this package. In Wink you can also use
+**Apps → Install Database Workbench…** as a shortcut to the same review.
+
+Wink 0.9.3 provides the database bridge. The Blink Apps draft can accept the
+same package, but does not provide a database bridge yet: the app opens and
+explains that MySQL connections are unavailable.
 
 Open **Apps → Database Workbench → Choose connection…** and select a local
 MySQL server or an existing SSH forward on 127.0.0.1. Use a MySQL account
