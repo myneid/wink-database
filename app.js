@@ -242,6 +242,7 @@ async function detect() {
   const db = window.blink?.database;
   try {
     const info = await window.blink?.host?.info?.();
+    bridge.launch = info?.launch || null;
     if (info?.capabilities?.includes('database') && db) {
       bridge.mode = typeof db.connections === 'function' && typeof db.open === 'function' ? 'full' : 'legacy';
     }
@@ -1583,6 +1584,14 @@ async function init() {
   await detect();
   await loadConnections();
   if (bridge.mode === 'full') $('#connection-list').focus?.();
+  // Opened by a command with a connection name, e.g. `dbw shop`.
+  const wanted = bridge.launch?.args?.filter(a => !a.startsWith('-')).join(' ').trim().toLowerCase();
+  if (wanted && bridge.mode === 'full') {
+    const match = home.connections.find(c => c.id === wanted || c.title.toLowerCase() === wanted || (c.name || '').toLowerCase() === wanted)
+      || home.connections.find(c => c.title.toLowerCase().includes(wanted));
+    if (match) await connect(match.id);
+    else homeStatus(`No saved connection matches “${wanted}”.`, true);
+  }
 }
 
 init();

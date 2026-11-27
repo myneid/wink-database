@@ -13,6 +13,13 @@ or newer and on Blink builds with the Apps `database` capability; nothing else
 needs installing (the hosts speak MySQL natively). Older Wink builds get a
 single read-only connection.
 
+## Opening it
+
+In Wink, choose it from the **Apps** menu. In Blink, tap it in Settings ›
+Apps or type `dbw` at the prompt: it opens full screen in a new tab (close the
+tab to quit). `dbw <connection name>` connects straight away, as does
+`apps open dbw <connection name>`.
+
 ## Connections
 
 - **New Connection** opens Wink's native form: name, environment
